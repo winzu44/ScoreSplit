@@ -7,3 +7,4 @@ edition = "2021"
 opencv = "0.93.4"
 
 base64 = "0.22.1"
+anyhow = "1.0"

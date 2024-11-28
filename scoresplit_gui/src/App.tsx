@@ -2,23 +2,31 @@ import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
+import { Provider } from "./components/ui/provider";
+import { Button } from "./components/ui/button";
+import { Slider } from "./components/ui/slider";
+import { Box } from "@chakra-ui/react";
+import { HStack, VStack } from "@chakra-ui/react";
+
+
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
   const [imageBase64, setImageBase64] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+
 
   async function start_stream() {
     await invoke("get_frame");
-
-
+    setIsStreaming(true);
   }
+
+  function stop_stream() {
+    emit("stop_stream");
+    setIsStreaming(false);
+  }
+
   // listen event, then set to state
   listen("update_frame", (event) => {
     const image_string = event.payload;
@@ -27,13 +35,30 @@ function App() {
 
   });
   return (
-    <div>
-      <img src={imageBase64} />
+    <Provider>
+      <Box w={720} h={480} m={4}>
+        <HStack>
 
-      <button onClick={start_stream}>
-        start
-      </button>
-    </div>
+        </HStack>
+        <img src={imageBase64} />
+      </Box>
+
+
+      <Slider />
+
+      <Button onClick={start_stream} disabled={isStreaming} />
+      <Button onClick={stop_stream} disabled={!isStreaming} />
+
+
+
+
+
+
+
+
+
+    </Provider>
+
 
   );
 }
