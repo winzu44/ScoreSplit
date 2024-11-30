@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "scoresplit_gui",
-        "width": 800,
-        "height": 600
+        "width": 1980,
+        "height": 1080
       }
     ],
     "security": {

@@ -14,6 +14,9 @@ use anyhow::Result;
 
 pub struct VideoManager {
     cap: VideoCapture,
+    seek_pos: f64,
+    fps: f64,
+    length_sec: f64,
 }
 
 /// Controler for videos
@@ -21,25 +24,41 @@ impl VideoManager {
     /// create VideoManger struct from file path
     pub fn new(file_path: &str) -> Result<Self> {
         let cap = videoio::VideoCapture::from_file(file_path, CAP_ANY)?;
-        Ok(VideoManager { cap })
+        let seek_pos = 0.0;
+        // get fps and frame count
+        let fps = cap.get(CAP_PROP_FPS)?;
+        let frame_count = cap.get(CAP_PROP_FRAME_COUNT)?;
+        // calc length(sec) from fps and frame count
+        let length_sec = frame_count / fps;
+
+        Ok(VideoManager {
+            cap,
+            seek_pos,
+            fps,
+            length_sec,
+        })
     }
-    /// seek to passed time, then update current frame
-    pub fn seek(&mut self, time: f64) -> Result<()> {
-        self.cap.set(CAP_PROP_POS_FRAMES, time)?;
-        Ok(())
+    /// set current frame position
+    pub fn seek(&mut self, time: f64) {
+        if time < 0.0 || time > self.length_sec {
+            println!("failed to set time");
+        } else {
+            self.seek_pos = time;
+        }
     }
 
     /// get video length(secs)
-    pub fn get_video_length(&self) -> Result<f64> {
-        let fps = self.cap.get(CAP_PROP_FPS)?;
-        let frame_count = self.cap.get(CAP_PROP_FRAME_COUNT)?;
-        // calc length(sec) from fps and frame count
-        let length = frame_count / fps;
-        Ok(length)
+    pub fn get_video_length(&self) -> f64 {
+        self.length_sec
     }
 
     /// get current frame as base64 string
     pub fn get_current_frame_as_base64(&mut self) -> String {
+        // calc current frame index from seek_pos and fps
+        let index = self.fps * self.seek_pos;
+        if self.cap.set(CAP_PROP_POS_FRAMES, index).is_err() {
+            println!("failed to set current frame");
+        }
         let mut current_frame = Mat::default();
         if self.cap.read(&mut current_frame).is_ok() {
             let mut buf = Vector::<u8>::default();

@@ -1,25 +1,66 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState, WheelEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
 import { emit, listen } from "@tauri-apps/api/event";
 import { Provider } from "./components/ui/provider";
 import { Button } from "./components/ui/button";
 import { Slider } from "./components/ui/slider";
-import { Box } from "@chakra-ui/react";
+import { Box, SliderValueChangeDetails } from "@chakra-ui/react";
 import { HStack, VStack } from "@chakra-ui/react";
+import { open } from "@tauri-apps/plugin-dialog";
 
 
 
 function App() {
   const [imageBase64, setImageBase64] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [slidervalue, setSliderValue] = useState([0]);
 
 
 
   async function start_stream() {
     await invoke("get_frame");
     setIsStreaming(true);
+  }
+
+  async function open_video() {
+    // open dialog
+    const file = await open({
+      multiple: false,
+      directory: false,
+    });
+
+    await invoke("open_video", { videoPath: file });
+    console.log(file);
+  }
+
+  // call back for slider value was changed
+  function seek_video(event: SliderValueChangeDetails) {
+    // emit current slider index (0 ~ 100000)
+    emit("video_seek", event.value.toString());
+    // set slider value
+    setSliderValue(event.value);
+
+  }
+
+  function seekbar_wheel(event: WheelEvent<HTMLDivElement>) {
+    // if event.deltaY is plus, wheel is downing
+    console.log(event.deltaY);
+
+    const current_slider_value = slidervalue[0];
+    console.log(current_slider_value)
+    if (event.deltaY > 0) {
+      setSliderValue([current_slider_value - 10]);
+
+
+    }
+    else {
+
+      setSliderValue([current_slider_value + 10]);
+    }
+
+    emit("video_seek", current_slider_value);
+
+
   }
 
   function stop_stream() {
@@ -36,18 +77,24 @@ function App() {
   });
   return (
     <Provider>
-      <Box w={720} h={480} m={4}>
-        <HStack>
+      <HStack>
+        <VStack>
+          <Box w={720} h={480} m={4}>
+            <img src={imageBase64} />
 
-        </HStack>
-        <img src={imageBase64} />
-      </Box>
+            <Slider onValueChange={seek_video} max={100000} m={4} onWheel={seekbar_wheel} value={slidervalue} />
+          </Box>
+
+        </VStack>
+      </HStack>
 
 
-      <Slider />
+
+
 
       <Button onClick={start_stream} disabled={isStreaming} />
       <Button onClick={stop_stream} disabled={!isStreaming} />
+      <Button onClick={open_video} />
 
 
 
