@@ -90,7 +90,5 @@ mod video_manager_test {
     fn get_frame_count_test() {
         let path = "/mnt/data/Videos/OBS_Records/2024-11-27 18-38-29.mp4";
         let video_manager = VideoManager::new(path).unwrap();
-        let length = video_manager.get_video_length().unwrap();
-        println!("length : {:?} (s)", length);
     }
 }
