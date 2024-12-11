@@ -1,12 +1,14 @@
 use base64::{engine::general_purpose, Engine};
 use opencv::{
-    core::{FileStorage, Image2DTraitConst, Mat, MatTraitConst, Vector, VectorToVec},
+    core::{FileStorage, Image2DTraitConst, Mat, MatTraitConst, Size, Vector, VectorToVec},
     highgui::{self, imshow, wait_key},
     imgcodecs::imencode,
+    imgproc::{resize, InterpolationFlags},
+    optflow::InterpolationType,
     video,
     videoio::{
         self, VideoCapture, VideoCaptureTrait, VideoCaptureTraitConst, CAP_ANY, CAP_PROP_FPS,
-        CAP_PROP_FRAME_COUNT, CAP_PROP_POS_FRAMES,
+        CAP_PROP_FRAME_COUNT, CAP_PROP_FRAME_HEIGHT, CAP_PROP_FRAME_WIDTH, CAP_PROP_POS_FRAMES,
     },
 };
 
@@ -17,25 +19,29 @@ pub struct VideoManager {
     seek_pos: f64,
     fps: f64,
     length_sec: f64,
+    res: (i32, i32),
 }
 
 /// Controler for videos
 impl VideoManager {
     /// create VideoManger struct from file path
     pub fn new(file_path: &str) -> Result<Self> {
-        let cap = videoio::VideoCapture::from_file(file_path, CAP_ANY)?;
+        let mut cap = videoio::VideoCapture::from_file(file_path, CAP_ANY)?;
         let seek_pos = 0.0;
         // get fps and frame count
         let fps = cap.get(CAP_PROP_FPS)?;
         let frame_count = cap.get(CAP_PROP_FRAME_COUNT)?;
         // calc length(sec) from fps and frame count
         let length_sec = frame_count / fps;
+        // set resolution
+        let res = (1280, 720);
 
         Ok(VideoManager {
             cap,
             seek_pos,
             fps,
             length_sec,
+            res,
         })
     }
     /// set current frame position
@@ -61,13 +67,19 @@ impl VideoManager {
         }
         let mut current_frame = Mat::default();
         if self.cap.read(&mut current_frame).is_ok() {
-            let mut buf = Vector::<u8>::default();
-            let params = Vector::<i32>::default();
-            // encode as jpg, then, convert the image to base64 string
-            if imencode(".jpg", &current_frame, &mut buf, &params).is_ok() {
-                let buf_vec = buf.to_vec();
-                let res = general_purpose::STANDARD.encode(&buf_vec);
-                return res;
+            // resize current frame
+            let mut resized_frame = Mat::default();
+            let size = Size::new(self.res.0, self.res.1);
+            if resize(&current_frame, &mut resized_frame, size, 0.0, 0.0, 0).is_ok() {
+                println!("resiezed to {:?}", resized_frame.size());
+                let mut buf = Vector::<u8>::default();
+                let params = Vector::<i32>::default();
+                // encode as jpg, then, convert the image to base64 string
+                if imencode(".jpg", &resized_frame, &mut buf, &params).is_ok() {
+                    let buf_vec = buf.to_vec();
+                    let res = general_purpose::STANDARD.encode(&buf_vec);
+                    return res;
+                }
             }
         }
         String::default()
