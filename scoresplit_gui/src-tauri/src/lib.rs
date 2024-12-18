@@ -71,15 +71,31 @@ fn open_video(window: Window, video_path: String) {
                 }
             }
         });
-        // start video frame update loop
 
+        // close current video if opened new video
+        let is_opened = Arc::new(Mutex::new(true));
+        let cloned_is_opened = Arc::clone(&is_opened);
+        window.listen("open_video", move |event| {
+            if let Ok(mut is_opened) = cloned_is_opened.lock() {
+                *is_opened = false;
+            }
+        });
+        // start video frame update loop
         let cloned_video_manager = Arc::clone(&arc_video_manager);
+
+        let cloned_is_opened = Arc::clone(&is_opened);
         thread::spawn(move || loop {
             thread::sleep(Duration::from_millis(20));
             if let Ok(mut video_manager) = cloned_video_manager.lock() {
                 let value = video_manager.get_current_frame_as_base64();
                 if window.emit("update_frame", value).is_err() {
                     println!("failed to emit event");
+                }
+            }
+            if let Ok(is_opened) = cloned_is_opened.lock() {
+                if !(*is_opened) {
+                    println!("video {:?} closed", video_path);
+                    break;
                 }
             }
         });

@@ -7,6 +7,8 @@ import { Slider } from "./components/ui/slider";
 import { Box, SliderValueChangeDetails } from "@chakra-ui/react";
 import { HStack, VStack } from "@chakra-ui/react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { Stage, Layer, Rect, Text, Image } from 'react-konva';
+import useImage from "use-image";
 
 
 
@@ -28,6 +30,8 @@ function App() {
       multiple: false,
       directory: false,
     });
+    // emit open_video event for close current video
+    emit("open_video");
 
     await invoke("open_video", { videoPath: file });
     console.log(file);
@@ -75,19 +79,31 @@ function App() {
     setImageBase64(fixed_string);
 
   });
+
+  const [image] = useImage(imageBase64);
+
+
   return (
     <Provider>
       <HStack>
-        <VStack>
-          <Box w={720} h={480} m={4}>
-            <img src={imageBase64} />
 
-            <Slider onValueChange={seek_video} max={100000} m={4} onWheel={seekbar_wheel} value={slidervalue} />
-          </Box>
-
-        </VStack>
       </HStack>
+      <Stage width={1280} height={720}>
+        <Layer>
 
+          <Image image={image} />
+          <Rect
+            x={0}
+            y={0}
+            width={100}
+            height={100}
+            fill={'white'}
+            draggable
+          />
+        </Layer>
+      </Stage>
+
+      <Slider onValueChange={seek_video} max={100000} m={4} onWheel={seekbar_wheel} value={slidervalue} />
 
 
 

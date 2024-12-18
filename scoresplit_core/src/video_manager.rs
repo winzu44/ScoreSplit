@@ -71,7 +71,6 @@ impl VideoManager {
             let mut resized_frame = Mat::default();
             let size = Size::new(self.res.0, self.res.1);
             if resize(&current_frame, &mut resized_frame, size, 0.0, 0.0, 0).is_ok() {
-                println!("resiezed to {:?}", resized_frame.size());
                 let mut buf = Vector::<u8>::default();
                 let params = Vector::<i32>::default();
                 // encode as jpg, then, convert the image to base64 string
