@@ -34,7 +34,7 @@ impl VideoManager {
         // calc length(sec) from fps and frame count
         let length_sec = frame_count / fps;
         // set resolution
-        let res = (1280, 720);
+        let res = (1920, 1080);
 
         Ok(VideoManager {
             cap,

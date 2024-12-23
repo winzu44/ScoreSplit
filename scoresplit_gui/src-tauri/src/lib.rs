@@ -61,7 +61,6 @@ fn open_video(window: Window, video_path: String) {
             // remove '"' from string
             let mut payload = event.payload().to_string();
             payload.retain(|c| c != '"');
-            println!("{:?}", payload);
             // convert string number to int
             if let Ok(seek_value) = payload.parse::<i32>() {
                 // convert seekbar value (0 ~ 100_000) to video length
@@ -80,12 +79,12 @@ fn open_video(window: Window, video_path: String) {
                 *is_opened = false;
             }
         });
-        // start video frame update loop
-        let cloned_video_manager = Arc::clone(&arc_video_manager);
 
+        let cloned_video_manager = Arc::clone(&arc_video_manager);
         let cloned_is_opened = Arc::clone(&is_opened);
+        // start video frame update loop
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_millis(20));
+            thread::sleep(Duration::from_millis(100));
             if let Ok(mut video_manager) = cloned_video_manager.lock() {
                 let value = video_manager.get_current_frame_as_base64();
                 if window.emit("update_frame", value).is_err() {
